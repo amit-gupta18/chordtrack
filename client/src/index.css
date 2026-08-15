@@ -96,4 +96,398 @@ body {
   .atlas-success-text {
     @apply text-sm font-medium text-atlas-success;
   }
+
+  /* ── Chordtrack home page ── */
+  .home-page {
+    @apply min-h-screen overflow-x-hidden bg-atlas-bg text-atlas-navy;
+  }
+
+  .home-nav {
+    @apply sticky top-0 z-50 flex items-center justify-between border-b border-atlas-border/60 bg-atlas-surface/80 px-4 py-3 backdrop-blur-md sm:px-8;
+  }
+
+  .home-logo {
+    @apply flex items-center gap-2 text-lg font-bold text-atlas-navy transition hover:text-atlas-blue;
+  }
+
+  .home-nav-link {
+    @apply text-sm font-medium text-atlas-text transition hover:text-atlas-blue;
+  }
+
+  .home-hero {
+    @apply relative px-4 pb-20 pt-12 sm:px-8 sm:pt-16;
+  }
+
+  .home-hero-bg {
+    @apply pointer-events-none absolute inset-0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, #e9f2ff 0%, transparent 70%),
+      radial-gradient(circle at 85% 40%, #e9f2ff80 0%, transparent 40%),
+      radial-gradient(circle at 10% 60%, #e9f2ff60 0%, transparent 35%);
+  }
+
+  .home-hero-inner {
+    @apply relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-8;
+  }
+
+  .home-eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.2em] text-atlas-blue;
+  }
+
+  .home-title {
+    @apply mt-3 text-5xl font-extrabold tracking-tight text-atlas-navy sm:text-6xl lg:text-7xl;
+  }
+
+  .home-title-accent {
+    @apply bg-gradient-to-r from-atlas-blue to-[#00b8d9] bg-clip-text text-transparent;
+  }
+
+  .home-tagline {
+    @apply mt-5 max-w-lg text-lg leading-relaxed text-atlas-text;
+  }
+
+  .home-hero-actions {
+    @apply mt-8 flex flex-wrap gap-3;
+  }
+
+  .home-cta-primary {
+    @apply rounded-lg bg-atlas-blue px-6 py-3 font-semibold text-white shadow-md shadow-atlas-blue/25 transition hover:-translate-y-0.5 hover:bg-atlas-blue-hover hover:shadow-lg;
+  }
+
+  .home-cta-secondary {
+    @apply rounded-lg border border-atlas-border bg-atlas-surface px-6 py-3 font-semibold text-atlas-navy transition hover:-translate-y-0.5 hover:border-atlas-blue/40 hover:bg-atlas-blue-subtle;
+  }
+
+  .home-hero-visual {
+    @apply relative mx-auto flex h-80 w-full max-w-md items-center justify-center sm:h-96;
+  }
+
+  .home-guitar-stage {
+    @apply relative z-10;
+    animation: home-guitar-strum 4s ease-in-out infinite;
+  }
+
+  .home-guitar {
+    @apply h-56 w-auto drop-shadow-lg sm:h-64;
+  }
+
+  .home-guitar-ring {
+    @apply absolute rounded-full border-2 border-atlas-blue/20;
+  }
+
+  .home-guitar-ring-1 {
+    @apply h-48 w-48;
+    animation: home-ring-pulse 3s ease-out infinite;
+  }
+
+  .home-guitar-ring-2 {
+    @apply h-64 w-64;
+    animation: home-ring-pulse 3s ease-out 1.5s infinite;
+  }
+
+  .home-note {
+    @apply absolute h-7 w-7 text-atlas-blue/50 sm:h-9 sm:w-9;
+  }
+
+  .home-note-1 {
+    top: 8%;
+    left: 12%;
+    animation: home-float 5s ease-in-out infinite;
+  }
+
+  .home-note-2 {
+    top: 18%;
+    right: 10%;
+    animation: home-float 6s ease-in-out 0.8s infinite;
+  }
+
+  .home-note-3 {
+    bottom: 30%;
+    left: 6%;
+    animation: home-float 4.5s ease-in-out 1.2s infinite;
+  }
+
+  .home-note-4 {
+    bottom: 12%;
+    right: 18%;
+    animation: home-float 5.5s ease-in-out 0.4s infinite;
+  }
+
+  .home-note-5 {
+    top: 42%;
+    right: 4%;
+    animation: home-float 4s ease-in-out 1.8s infinite;
+  }
+
+  .home-chord-pills {
+    @apply absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-2;
+  }
+
+  .home-chord-pill {
+    @apply rounded-full bg-atlas-surface px-3 py-1 text-xs font-bold text-atlas-blue shadow-sm ring-1 ring-atlas-border;
+    animation: home-pill-bounce 2.8s ease-in-out infinite;
+  }
+
+  .home-section {
+    @apply mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-20;
+  }
+
+  .home-section-alt {
+    @apply rounded-3xl bg-atlas-surface/70 ring-1 ring-atlas-border/80;
+  }
+
+  .home-section-header {
+    @apply mx-auto mb-12 max-w-2xl text-center;
+  }
+
+  .home-section-title {
+    @apply mt-2 text-3xl font-bold tracking-tight text-atlas-navy sm:text-4xl;
+  }
+
+  .home-section-sub {
+    @apply mt-4 text-atlas-text;
+  }
+
+  .home-feature-grid {
+    @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .home-feature-card {
+    @apply rounded-2xl border border-atlas-border bg-atlas-surface p-6 shadow-sm transition hover:-translate-y-1 hover:border-atlas-blue/30 hover:shadow-md;
+  }
+
+  .home-feature-card h3 {
+    @apply mt-4 font-semibold text-atlas-navy;
+  }
+
+  .home-feature-card p {
+    @apply mt-2 text-sm leading-relaxed text-atlas-muted;
+  }
+
+  .home-feature-icon {
+    @apply flex h-11 w-11 items-center justify-center rounded-xl bg-atlas-blue-subtle text-xl;
+  }
+
+  .home-steps {
+    @apply grid gap-6 sm:grid-cols-3;
+  }
+
+  .home-step {
+    @apply relative rounded-2xl border border-atlas-border bg-atlas-bg p-6;
+  }
+
+  .home-step-num {
+    @apply text-3xl font-extrabold text-atlas-blue/25;
+  }
+
+  .home-step h3 {
+    @apply mt-2 font-semibold text-atlas-navy;
+  }
+
+  .home-step p {
+    @apply mt-2 text-sm text-atlas-muted;
+  }
+
+  .home-progress-layout {
+    @apply grid items-center gap-12 lg:grid-cols-2;
+  }
+
+  .home-progress-list {
+    @apply mt-6 space-y-3 text-sm text-atlas-text;
+  }
+
+  .home-progress-list li {
+    @apply flex items-center gap-3;
+  }
+
+  .home-progress-demo {
+    @apply flex justify-center;
+  }
+
+  .home-demo-card {
+    @apply w-full max-w-sm rounded-2xl border border-atlas-border bg-atlas-surface p-6 shadow-lg;
+    animation: home-demo-float 5s ease-in-out infinite;
+  }
+
+  .home-demo-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-atlas-muted;
+  }
+
+  .home-demo-timer {
+    @apply mt-2 font-mono text-4xl font-bold text-atlas-navy;
+  }
+
+  .home-demo-chord {
+    @apply mt-1 text-5xl font-extrabold text-atlas-blue;
+  }
+
+  .home-demo-stats {
+    @apply mt-4 flex gap-6;
+  }
+
+  .home-demo-stats span {
+    @apply block text-2xl font-bold text-atlas-navy;
+  }
+
+  .home-demo-stats small {
+    @apply text-xs uppercase tracking-wide text-atlas-muted;
+  }
+
+  .home-demo-sequence {
+    @apply mt-5 flex flex-wrap gap-2;
+  }
+
+  .home-demo-sequence span {
+    @apply rounded-md bg-atlas-blue-subtle px-2.5 py-1 text-sm font-semibold text-atlas-blue;
+    animation: home-seq-pop 3s ease-in-out infinite;
+  }
+
+  .home-demo-sequence span:nth-child(2) {
+    animation-delay: 0.3s;
+  }
+  .home-demo-sequence span:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+  .home-demo-sequence span:nth-child(4) {
+    animation-delay: 0.9s;
+  }
+  .home-demo-sequence span:nth-child(5) {
+    animation-delay: 1.2s;
+  }
+  .home-demo-sequence span:nth-child(6) {
+    animation-delay: 1.5s;
+  }
+
+  .home-cta-section {
+    @apply mx-4 mb-8 sm:mx-8;
+  }
+
+  .home-cta-inner {
+    @apply relative overflow-hidden rounded-3xl bg-gradient-to-br from-atlas-blue to-[#0055cc] px-6 py-16 text-center text-white sm:px-12;
+  }
+
+  .home-cta-inner h2 {
+    @apply relative z-10 text-3xl font-bold sm:text-4xl;
+  }
+
+  .home-cta-inner p {
+    @apply relative z-10 mx-auto mt-4 max-w-lg text-white/85;
+  }
+
+  .home-cta-light {
+    @apply relative z-10 mt-8 inline-block rounded-lg bg-white px-8 py-3 font-semibold text-atlas-blue shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl;
+  }
+
+  .home-cta-guitar {
+    @apply pointer-events-none absolute -right-4 bottom-0 h-40 w-auto opacity-30;
+    animation: home-guitar-strum 5s ease-in-out infinite;
+  }
+
+  .home-cta-note {
+    @apply pointer-events-none absolute h-8 w-8 text-white/30;
+  }
+
+  .home-cta-note-left {
+    top: 20%;
+    left: 10%;
+    animation: home-float 4s ease-in-out infinite;
+  }
+
+  .home-cta-note-right {
+    top: 30%;
+    right: 12%;
+    animation: home-float 5s ease-in-out 1s infinite;
+  }
+
+  .home-footer {
+    @apply flex flex-col items-center gap-2 border-t border-atlas-border px-4 py-8 text-center text-sm text-atlas-muted sm:flex-row sm:justify-between sm:px-8;
+  }
+
+  .home-fade-up {
+    animation: home-fade-up 0.7s ease-out both;
+  }
+
+  .home-fade-up-delay {
+    animation-delay: 0.15s;
+  }
+}
+
+@keyframes home-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(-14px) rotate(8deg);
+    opacity: 1;
+  }
+}
+
+@keyframes home-guitar-strum {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  25% {
+    transform: rotate(3deg) translateY(-2px);
+  }
+  50% {
+    transform: rotate(-1deg);
+  }
+  75% {
+    transform: rotate(2deg) translateY(-1px);
+  }
+}
+
+@keyframes home-ring-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes home-pill-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes home-demo-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes home-seq-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes home-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

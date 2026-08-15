@@ -7,6 +7,17 @@ export interface SelfReport {
   rhythmSteady?: boolean
 }
 
+export interface SessionAnalysisSummary {
+  switchCount: number
+  chordPlays: number
+  uniqueChords: string[]
+  detectedSequence: string[]
+  progressionTimestamps: { chord: string; atMs: number }[]
+  chordFrequency: { chord: string; count: number }[]
+  aiFeedback?: string
+  durationSeconds: number
+}
+
 export interface Session {
   _id: string
   type: string
@@ -15,6 +26,7 @@ export interface Session {
   durationSeconds: number
   transitionsCompleted: number
   selfReport?: SelfReport
+  analysis?: SessionAnalysisSummary
   createdAt: string
 }
 

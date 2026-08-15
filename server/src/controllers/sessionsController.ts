@@ -2,6 +2,7 @@ import type { Response } from 'express'
 import { z } from 'zod'
 import type { AuthRequest } from '../middleware/auth.js'
 import { validateBody } from '../middleware/validate.js'
+import { AudioAnalysis } from '../models/AudioAnalysis.js'
 import { Session } from '../models/Session.js'
 
 const selfReportSchema = z.object({
@@ -42,7 +43,31 @@ export async function listSessions(req: AuthRequest, res: Response): Promise<voi
   }
 
   const sessions = await Session.find(filter).sort({ createdAt: -1 }).limit(100)
-  res.json({ sessions })
+  const analyses = await AudioAnalysis.find({
+    sessionId: { $in: sessions.map((s) => s._id) },
+  })
+  const analysisBySession = new Map(analyses.map((a) => [a.sessionId.toString(), a]))
+
+  res.json({
+    sessions: sessions.map((session) => {
+      const analysis = analysisBySession.get(session._id.toString())
+      return {
+        ...session.toObject(),
+        analysis: analysis
+          ? {
+              switchCount: analysis.switchCount,
+              chordPlays: analysis.chordPlays,
+              uniqueChords: analysis.uniqueChords,
+              detectedSequence: analysis.detectedSequence,
+              progressionTimestamps: analysis.progressionTimestamps,
+              chordFrequency: analysis.chordFrequency,
+              aiFeedback: analysis.aiFeedback,
+              durationSeconds: analysis.durationSeconds,
+            }
+          : undefined,
+      }
+    }),
+  })
 }
 
 export async function getSession(req: AuthRequest, res: Response): Promise<void> {

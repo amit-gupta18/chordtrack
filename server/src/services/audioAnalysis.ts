@@ -224,13 +224,35 @@ export function processFrame(
   }
 }
 
+export interface ClientSessionStats {
+  progression: { chord: string; atMs: number }[]
+  switchCount: number
+  chordPlays: number
+  sequence: string[]
+}
+
+function buildChordFrequency(sequence: string[]): { chord: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const chord of sequence) counts.set(chord, (counts.get(chord) ?? 0) + 1)
+  return [...counts.entries()]
+    .map(([chord, count]) => ({ chord, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
 export function finalizeAnalysis(
   state: LiveAnalysisState,
   sessionId: string,
+  clientStats?: ClientSessionStats,
+  durationSecondsOverride?: number,
 ): {
   sessionId: string
   expectedSequence: string[]
   detectedSequence: string[]
+  switchCount: number
+  chordPlays: number
+  uniqueChords: string[]
+  progressionTimestamps: { chord: string; atMs: number }[]
+  chordFrequency: { chord: string; count: number }[]
   accuracy: number
   actualBpm: number | null
   targetBpm: number
@@ -240,8 +262,15 @@ export function finalizeAnalysis(
   perStringDiagnosis: IPerStringDiagnosis[]
   durationSeconds: number
 } {
-  const detected = state.detectedSequence
-  const durationSeconds = Math.max(1, Math.round((Date.now() - state.startedAtMs) / 1000))
+  const detected = clientStats?.sequence.length ? clientStats.sequence : state.detectedSequence
+  const durationSeconds =
+    durationSecondsOverride ??
+    Math.max(1, Math.round((Date.now() - state.startedAtMs) / 1000))
+  const switchCount = clientStats?.switchCount ?? Math.max(0, detected.length - 1)
+  const chordPlays = clientStats?.chordPlays ?? detected.length
+  const progressionTimestamps = clientStats?.progression ?? []
+  const uniqueChords = [...new Set(detected)]
+  const chordFrequency = buildChordFrequency(detected)
 
   const transitionDurationsMs: number[] = []
   const hesitationPoints: number[] = []
@@ -270,7 +299,12 @@ export function finalizeAnalysis(
     sessionId,
     expectedSequence: [],
     detectedSequence: detected,
-    accuracy: detected.length >= 2 ? 1 : detected.length > 0 ? 0.5 : 0,
+    switchCount,
+    chordPlays,
+    uniqueChords,
+    progressionTimestamps,
+    chordFrequency,
+    accuracy: chordPlays >= 2 ? Math.min(1, switchCount / Math.max(1, chordPlays - 1)) : chordPlays > 0 ? 0.5 : 0,
     actualBpm,
     targetBpm: state.targetBpm,
     timingDrift,

@@ -16,6 +16,7 @@ import {
   createPracticeSession,
   finalizePracticeSession,
 } from './services/practiceService.js'
+import { clampSessionDuration, DEFAULT_SESSION_DURATION_SECONDS } from './lib/sessionDuration.js'
 import { createApp } from './app.js'
 
 const app = createApp()
@@ -45,11 +46,14 @@ io.use((socket, next) => {
 const activeStates = new Map<string, LiveAnalysisState>()
 
 io.on('connection', (socket) => {
-  socket.on('practice:start', async (data: { targetBpm?: number } = {}) => {
+  socket.on('practice:start', async (data: { targetBpm?: number; durationSeconds?: number } = {}) => {
+    const durationSeconds = clampSessionDuration(data.durationSeconds ?? DEFAULT_SESSION_DURATION_SECONDS)
     const session = await createPracticeSession(socket.data.userId, data.targetBpm ?? 80)
-    activeStates.set(socket.id, createAnalysisState(data.targetBpm ?? 80))
+    const state = createAnalysisState(data.targetBpm ?? 80)
+    activeStates.set(socket.id, state)
     socket.data.sessionId = session._id.toString()
-    socket.emit('practice:started', { sessionId: session._id })
+    socket.data.durationSeconds = durationSeconds
+    socket.emit('practice:started', { sessionId: session._id, durationSeconds })
   })
 
   socket.on('practice:frame', (frame: AudioFrame) => {
@@ -60,31 +64,44 @@ io.on('connection', (socket) => {
     socket.emit('practice:feedback', feedback)
   })
 
-  socket.on('practice:stop', async () => {
-    const state = activeStates.get(socket.id)
-    const sessionId = socket.data.sessionId as string | undefined
-    if (!state || !sessionId) return
+  socket.on(
+    'practice:stop',
+    async (data?: {
+      clientStats?: {
+        progression: { chord: string; atMs: number }[]
+        switchCount: number
+        chordPlays: number
+        sequence: string[]
+      }
+    }) => {
+      const state = activeStates.get(socket.id)
+      const sessionId = socket.data.sessionId as string | undefined
+      if (!state || !sessionId) return
 
-    const result = finalizeAnalysis(state, sessionId)
-    const analysis = await saveAudioAnalysisWithFeedback(result, {
-      bpm: result.targetBpm,
-      transitionsCompleted: Math.max(0, result.detectedSequence.length - 1),
-      chordPair:
-        result.detectedSequence.length >= 2
-          ? { from: result.detectedSequence[0]!, to: result.detectedSequence[1]! }
-          : undefined,
-    })
+      const durationSeconds = (socket.data.durationSeconds as number | undefined) ?? 60
+      const result = finalizeAnalysis(state, sessionId, data?.clientStats, durationSeconds)
+      const analysis = await saveAudioAnalysisWithFeedback(result)
 
-    await finalizePracticeSession(
-      socket.data.userId,
-      sessionId,
-      buildSessionSummary(analysis, result.durationSeconds),
-    )
+      await finalizePracticeSession(socket.data.userId, sessionId, buildSessionSummary(analysis))
 
-    activeStates.delete(socket.id)
-    socket.data.sessionId = undefined
-    socket.emit('practice:complete', { analysis, sessionId })
-  })
+      activeStates.delete(socket.id)
+      socket.data.sessionId = undefined
+      socket.data.durationSeconds = undefined
+      socket.emit('practice:complete', {
+        sessionId,
+        analysis: {
+          detectedSequence: analysis.detectedSequence,
+          switchCount: analysis.switchCount,
+          chordPlays: analysis.chordPlays,
+          uniqueChords: analysis.uniqueChords,
+          chordFrequency: analysis.chordFrequency,
+          progressionTimestamps: analysis.progressionTimestamps,
+          aiFeedback: analysis.aiFeedback,
+          durationSeconds: analysis.durationSeconds,
+        },
+      })
+    },
+  )
 
   socket.on('disconnect', () => {
     activeStates.delete(socket.id)

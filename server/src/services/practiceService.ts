@@ -28,6 +28,7 @@ export async function finalizePracticeSession(
   sessionId: string,
   analysis: {
     detectedSequence: string[]
+    switchCount?: number
     durationSeconds: number
     actualBpm?: number | null
     targetBpm?: number
@@ -36,7 +37,7 @@ export async function finalizePracticeSession(
   },
 ): Promise<void> {
   const uniqueChords = [...new Set(analysis.detectedSequence)]
-  const transitions = Math.max(0, analysis.detectedSequence.length - 1)
+  const transitions = analysis.switchCount ?? Math.max(0, analysis.detectedSequence.length - 1)
 
   const chordPair =
     uniqueChords.length >= 2
@@ -62,7 +63,7 @@ export async function finalizePracticeSession(
   const notes =
     analysis.aiFeedback ??
     (uniqueChords.length > 0
-      ? `Detected chords: ${uniqueChords.join(' → ')}. ${transitions} transitions in ${analysis.durationSeconds}s.`
+      ? `${analysis.durationSeconds}s session: ${uniqueChords.join(' → ')}. ${transitions} switches.`
       : `Practice session: ${analysis.durationSeconds}s.`)
 
   const today = startOfDay(new Date())
@@ -97,10 +98,11 @@ export async function createPracticeSession(userId: Types.ObjectId | string, tar
   })
 }
 
-export function buildSessionSummary(analysis: IAudioAnalysis, durationSeconds: number) {
+export function buildSessionSummary(analysis: IAudioAnalysis) {
   return {
     detectedSequence: analysis.detectedSequence,
-    durationSeconds,
+    switchCount: analysis.switchCount,
+    durationSeconds: analysis.durationSeconds,
     actualBpm: analysis.actualBpm,
     targetBpm: analysis.targetBpm,
     accuracy: analysis.accuracy,
