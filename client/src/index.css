@@ -1,6 +1,99 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-atlas-blue: #0c66e4;
+  --color-atlas-blue-hover: #0055cc;
+  --color-atlas-blue-pressed: #09326c;
+  --color-atlas-blue-subtle: #e9f2ff;
+  --color-atlas-navy: #172b4d;
+  --color-atlas-text: #44546f;
+  --color-atlas-muted: #6b778c;
+  --color-atlas-border: #dfe1e6;
+  --color-atlas-surface: #ffffff;
+  --color-atlas-bg: #f4f5f7;
+  --color-atlas-danger: #de350b;
+  --color-atlas-danger-hover: #bf2600;
+  --color-atlas-success: #36b37e;
+  --color-atlas-warning: #ff8b00;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: var(--color-atlas-bg);
+  color: var(--color-atlas-navy);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .atlas-page {
+    @apply min-h-screen bg-atlas-bg text-atlas-navy;
+  }
+
+  .atlas-card {
+    @apply rounded-lg border border-atlas-border bg-atlas-surface shadow-sm;
+  }
+
+  .atlas-card-elevated {
+    @apply rounded-lg border border-atlas-border bg-atlas-surface shadow-md;
+  }
+
+  .atlas-heading {
+    @apply text-2xl font-semibold text-atlas-navy;
+  }
+
+  .atlas-subtext {
+    @apply text-sm text-atlas-muted;
+  }
+
+  .atlas-input {
+    @apply w-full rounded-md border border-atlas-border bg-atlas-surface px-3 py-2 text-atlas-navy placeholder:text-atlas-muted focus:border-atlas-blue focus:outline-none focus:ring-2 focus:ring-atlas-blue/20;
+  }
+
+  .atlas-btn-primary {
+    @apply rounded-md bg-atlas-blue px-4 py-2 font-semibold text-white transition hover:bg-atlas-blue-hover disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .atlas-btn-secondary {
+    @apply rounded-md border border-atlas-border bg-atlas-surface px-4 py-2 text-sm font-medium text-atlas-text transition hover:bg-atlas-bg disabled:opacity-50;
+  }
+
+  .atlas-btn-danger {
+    @apply rounded-md bg-atlas-danger px-4 py-2 font-semibold text-white transition hover:bg-atlas-danger-hover disabled:opacity-50;
+  }
+
+  .atlas-badge {
+    @apply rounded-full bg-atlas-blue-subtle px-4 py-1 text-sm font-medium text-atlas-blue;
+  }
+
+  .atlas-nav-link {
+    @apply rounded-md px-3 py-1.5 text-sm font-medium text-atlas-text transition hover:bg-atlas-bg;
+  }
+
+  .atlas-nav-link-active {
+    @apply rounded-md bg-atlas-blue px-3 py-1.5 text-sm font-medium text-white;
+  }
+
+  .atlas-link {
+    @apply font-medium text-atlas-blue hover:text-atlas-blue-hover hover:underline;
+  }
+
+  .atlas-error {
+    @apply text-sm text-atlas-danger;
+  }
+
+  .atlas-success-text {
+    @apply text-sm font-medium text-atlas-success;
+  }
 }

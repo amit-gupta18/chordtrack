@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import Meyda from 'meyda'
 import { io, type Socket } from 'socket.io-client'
+import { computeChromaFromFft } from '../lib/chroma'
 import {
   ChromagramSmoother,
+  computeRms,
   detectChordFromChroma,
 } from '../lib/chordDetection'
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:3001'
-const BUFFER_SIZE = 8192
+const FFT_SIZE = 8192
 
 export interface PracticeFeedback {
   detectedChord: string | null
@@ -29,7 +30,8 @@ export function usePracticeSession() {
   const socketRef = useRef<Socket | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const ctxRef = useRef<AudioContext | null>(null)
-  const meydaRef = useRef<ReturnType<typeof Meyda.createMeydaAnalyzer> | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const rafRef = useRef<number | null>(null)
   const smootherRef = useRef(new ChromagramSmoother())
   const lastRmsRef = useRef(0)
   const chordSequenceRef = useRef<string[]>([])
@@ -37,11 +39,12 @@ export function usePracticeSession() {
   const stableFramesRef = useRef(0)
 
   const cleanup = useCallback(() => {
-    meydaRef.current?.stop()
-    meydaRef.current = null
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
     streamRef.current?.getTracks().forEach((t) => t.stop())
     void ctxRef.current?.close()
     ctxRef.current = null
+    analyserRef.current = null
     socketRef.current?.disconnect()
     socketRef.current = null
     smootherRef.current.reset()
@@ -97,6 +100,16 @@ export function usePracticeSession() {
         if (ctx.state === 'suspended') await ctx.resume()
 
         const source = ctx.createMediaStreamSource(stream)
+        const analyser = ctx.createAnalyser()
+        analyser.fftSize = FFT_SIZE
+        analyser.smoothingTimeConstant = 0.3
+        analyser.minDecibels = -90
+        analyser.maxDecibels = -10
+        source.connect(analyser)
+        analyserRef.current = analyser
+
+        const timeBuffer = new Float32Array(analyser.fftSize)
+        const freqBuffer = new Float32Array(analyser.frequencyBinCount)
 
         const socket = io(WS_URL, { withCredentials: true })
         socketRef.current = socket
@@ -106,61 +119,6 @@ export function usePracticeSession() {
           socket.on('practice:started', () => resolve())
           socket.on('connect_error', (err) => reject(err))
         })
-
-        const analyzer = Meyda.createMeydaAnalyzer({
-          audioContext: ctx,
-          source,
-          bufferSize: BUFFER_SIZE,
-          featureExtractors: ['chroma', 'rms'],
-          callback: (features: Record<string, number | number[]>) => {
-            const chroma = features.chroma as number[] | undefined
-            if (!chroma || chroma.length !== 12) return
-
-            const rms = (features.rms as number) ?? 0
-            const smoothed = smootherRef.current.push(chroma)
-            const { chord, confidence } = detectChordFromChroma(smoothed, rms)
-
-            if (chord === lastStableChordRef.current) {
-              stableFramesRef.current++
-            } else {
-              stableFramesRef.current = chord ? 1 : 0
-              lastStableChordRef.current = chord
-            }
-
-            if (
-              chord &&
-              stableFramesRef.current === 6 &&
-              chordSequenceRef.current[chordSequenceRef.current.length - 1] !== chord
-            ) {
-              chordSequenceRef.current = [...chordSequenceRef.current, chord]
-            }
-
-            const onsets = rms > 0.04 && lastRmsRef.current <= 0.04
-            lastRmsRef.current = rms
-
-            setFeedback((prev) => ({
-              detectedChord: chord,
-              confidence,
-              bpmEstimate: prev?.bpmEstimate ?? null,
-              driftMs: prev?.driftMs ?? null,
-              diagnosis: prev?.diagnosis ?? [],
-              chordSequence: [...chordSequenceRef.current],
-            }))
-
-            socket.emit('practice:frame', {
-              timestamp: performance.now(),
-              rms,
-              onsets,
-              chroma: smoothed,
-              detectedChord: chord,
-              confidence,
-            })
-          },
-        })
-
-        if (!analyzer) throw new Error('Could not create audio analyzer')
-        meydaRef.current = analyzer
-        analyzer.start()
 
         socket.on('practice:feedback', (data: Partial<PracticeFeedback>) => {
           setFeedback((prev) => ({
@@ -173,7 +131,56 @@ export function usePracticeSession() {
           }))
         })
 
+        const loop = () => {
+          analyser.getFloatTimeDomainData(timeBuffer)
+          analyser.getFloatFrequencyData(freqBuffer)
+
+          const rms = computeRms(timeBuffer)
+          const chroma = computeChromaFromFft(freqBuffer, ctx.sampleRate)
+          const smoothed = smootherRef.current.push(chroma)
+          const { chord, confidence } = detectChordFromChroma(smoothed, rms)
+
+          if (chord === lastStableChordRef.current) {
+            stableFramesRef.current++
+          } else {
+            stableFramesRef.current = chord ? 1 : 0
+            lastStableChordRef.current = chord
+          }
+
+          if (
+            chord &&
+            stableFramesRef.current === 6 &&
+            chordSequenceRef.current[chordSequenceRef.current.length - 1] !== chord
+          ) {
+            chordSequenceRef.current = [...chordSequenceRef.current, chord]
+          }
+
+          const onsets = rms > 0.04 && lastRmsRef.current <= 0.04
+          lastRmsRef.current = rms
+
+          setFeedback((prev) => ({
+            detectedChord: chord,
+            confidence,
+            bpmEstimate: prev?.bpmEstimate ?? null,
+            driftMs: prev?.driftMs ?? null,
+            diagnosis: prev?.diagnosis ?? [],
+            chordSequence: [...chordSequenceRef.current],
+          }))
+
+          socket.emit('practice:frame', {
+            timestamp: performance.now(),
+            rms,
+            onsets,
+            chroma: smoothed,
+            detectedChord: chord,
+            confidence,
+          })
+
+          rafRef.current = requestAnimationFrame(loop)
+        }
+
         setIsActive(true)
+        loop()
       } catch (err) {
         cleanup()
         setError(err instanceof Error ? err.message : 'Could not start practice session')

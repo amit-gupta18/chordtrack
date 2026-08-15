@@ -42,20 +42,22 @@ export function Metronome() {
   }, [isPlaying, bpm, beatsPerBar, setCurrentBeat])
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-6">
-      <h2 className="text-xl font-bold text-white">Metronome</h2>
+    <div className="atlas-card space-y-4 p-6">
+      <h2 className="text-xl font-semibold text-atlas-navy">Metronome</h2>
 
       <div className="flex items-center justify-center gap-2">
         {Array.from({ length: beatsPerBar }, (_, i) => (
           <div
             key={i}
-            className={`h-4 w-4 rounded-full transition ${currentBeat === i + 1 && isPlaying ? 'bg-emerald-400 scale-125' : 'bg-slate-700'}`}
+            className={`h-4 w-4 rounded-full transition ${
+              currentBeat === i + 1 && isPlaying ? 'scale-125 bg-atlas-blue' : 'bg-atlas-border'
+            }`}
           />
         ))}
       </div>
 
       <div className="flex items-center gap-4">
-        <label className="text-sm text-slate-300">
+        <label className="text-sm text-atlas-text">
           BPM
           <input
             type="range"
@@ -63,9 +65,9 @@ export function Metronome() {
             max={200}
             value={bpm}
             onChange={(e) => setBpm(Number(e.target.value))}
-            className="ml-2 w-48"
+            className="ml-2 w-48 accent-atlas-blue"
           />
-          <span className="ml-2 font-mono text-white">{bpm}</span>
+          <span className="ml-2 font-mono font-semibold text-atlas-navy">{bpm}</span>
         </label>
       </div>
 
@@ -75,16 +77,16 @@ export function Metronome() {
             key={sig}
             type="button"
             onClick={() => setTimeSignature(sig)}
-            className={`rounded-lg px-3 py-1 text-sm ${timeSignature === sig ? 'bg-emerald-600 text-white' : 'border border-slate-600 text-slate-300'}`}
+            className={
+              timeSignature === sig
+                ? 'atlas-nav-link-active'
+                : 'rounded-md border border-atlas-border px-3 py-1 text-sm text-atlas-text hover:bg-atlas-bg'
+            }
           >
             {sig}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={addTap}
-          className="rounded-lg border border-slate-600 px-3 py-1 text-sm text-slate-300 hover:bg-slate-800"
-        >
+        <button type="button" onClick={addTap} className="atlas-btn-secondary px-3 py-1">
           Tap tempo
         </button>
       </div>
@@ -92,7 +94,7 @@ export function Metronome() {
       <button
         type="button"
         onClick={() => setIsPlaying(!isPlaying)}
-        className={`w-full rounded-xl py-3 font-semibold ${isPlaying ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white`}
+        className={`w-full py-3 ${isPlaying ? 'atlas-btn-danger' : 'atlas-btn-primary'}`}
       >
         {isPlaying ? 'Stop' : 'Start'}
       </button>

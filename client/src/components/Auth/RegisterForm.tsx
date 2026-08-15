@@ -16,18 +16,19 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-6">
-      <h1 className="text-2xl font-bold text-white">Create account</h1>
-      {register.isError && (
-        <p className="text-sm text-red-400">{(register.error as Error).message}</p>
-      )}
+    <form onSubmit={handleSubmit} className="atlas-card mx-auto w-full max-w-md space-y-4 p-6">
+      <div className="mb-2">
+        <h1 className="atlas-heading">Create account</h1>
+        <p className="atlas-subtext mt-1">Start tracking your guitar practice</p>
+      </div>
+      {register.isError && <p className="atlas-error">{(register.error as Error).message}</p>}
       <input
         type="text"
         placeholder="Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-white"
+        className="atlas-input"
       />
       <input
         type="email"
@@ -35,7 +36,7 @@ export function RegisterForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-white"
+        className="atlas-input"
       />
       <input
         type="password"
@@ -44,17 +45,13 @@ export function RegisterForm() {
         onChange={(e) => setPassword(e.target.value)}
         required
         minLength={6}
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-white"
+        className="atlas-input"
       />
-      <button
-        type="submit"
-        disabled={register.isPending}
-        className="w-full rounded-lg bg-emerald-600 py-2 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-      >
+      <button type="submit" disabled={register.isPending} className="atlas-btn-primary w-full">
         {register.isPending ? 'Creating…' : 'Register'}
       </button>
-      <p className="text-center text-sm text-slate-400">
-        Already have an account? <Link to="/login" className="text-emerald-400 hover:underline">Sign in</Link>
+      <p className="text-center text-sm text-atlas-muted">
+        Already have an account? <Link to="/login" className="atlas-link">Sign in</Link>
       </p>
     </form>
   )

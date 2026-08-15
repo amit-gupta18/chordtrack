@@ -14,6 +14,18 @@ import { usePracticeSession } from '../hooks/usePracticeSession'
 import { useAnalyticsOverview } from '../queries/useAnalytics'
 import { useStreak } from '../queries/useJournal'
 
+const CHART_GRID = '#DFE1E6'
+const CHART_AXIS = '#6B778C'
+const CHART_BLUE = '#0C66E4'
+const CHART_TEAL = '#00B8D9'
+const TOOLTIP_STYLE = {
+  background: '#FFFFFF',
+  border: '1px solid #DFE1E6',
+  borderRadius: 6,
+  color: '#172B4D',
+  fontSize: 12,
+}
+
 export function DashboardPage() {
   const { data, isLoading } = useAnalyticsOverview()
   const { data: streak = 0 } = useStreak()
@@ -31,41 +43,39 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-sm text-slate-400">Play your guitar — chords are detected automatically.</p>
+          <h1 className="atlas-heading">Dashboard</h1>
+          <p className="atlas-subtext">Play your guitar — chords are detected automatically.</p>
         </div>
-        <span className="rounded-full bg-emerald-900 px-4 py-1 text-sm text-emerald-300">
+        <span className="atlas-badge">
           Streak: {streak} day{streak !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <section className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-slate-950 p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-slate-400">Now playing</p>
-            <p className="mt-1 text-7xl font-bold tracking-tight text-white">
-              {currentChord ?? '—'}
-            </p>
-            {isActive && (
-              <p className="mt-2 text-sm text-slate-400">
-                {currentChord
-                  ? `${Math.round((feedback?.confidence ?? 0) * 100)}% match`
-                  : 'Play a chord — hold it steady for a moment'}
+      <section className="atlas-card-elevated overflow-hidden p-6">
+        <div className="rounded-lg bg-atlas-blue-subtle p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-atlas-blue">Now playing</p>
+              <p className="mt-1 text-7xl font-bold tracking-tight text-atlas-navy">
+                {currentChord ?? '—'}
               </p>
-            )}
-          </div>
+              {isActive && (
+                <p className="mt-2 text-sm text-atlas-muted">
+                  {currentChord
+                    ? `${Math.round((feedback?.confidence ?? 0) * 100)}% match`
+                    : 'Play a chord — hold it steady for a moment'}
+                </p>
+              )}
+            </div>
 
-          <button
-            type="button"
-            onClick={handleToggle}
-            className={`rounded-xl px-6 py-3 font-semibold text-white transition ${
-              isActive
-                ? 'bg-red-600 hover:bg-red-500'
-                : 'bg-emerald-600 hover:bg-emerald-500'
-            }`}
-          >
-            {isActive ? 'Stop practice' : 'Start practice'}
-          </button>
+            <button
+              type="button"
+              onClick={handleToggle}
+              className={isActive ? 'atlas-btn-danger px-6 py-3' : 'atlas-btn-primary px-6 py-3'}
+            >
+              {isActive ? 'Stop practice' : 'Start practice'}
+            </button>
+          </div>
         </div>
 
         {isActive && (
@@ -81,7 +91,7 @@ export function DashboardPage() {
             {chordSequence.map((chord, i) => (
               <span
                 key={`${chord}-${i}`}
-                className="rounded-lg bg-slate-800 px-3 py-1 text-sm font-medium text-slate-200"
+                className="rounded-md bg-atlas-blue-subtle px-3 py-1 text-sm font-semibold text-atlas-blue"
               >
                 {chord}
               </span>
@@ -90,35 +100,35 @@ export function DashboardPage() {
         )}
 
         {feedback?.diagnosis && feedback.diagnosis.length > 0 && (
-          <ul className="mt-4 space-y-2 rounded-xl bg-slate-800/50 p-4 text-sm text-slate-300">
+          <ul className="mt-4 space-y-2 rounded-lg border border-atlas-warning/30 bg-[#FFFAE6] p-4 text-sm text-atlas-text">
             {feedback.diagnosis.map((d, i) => (
               <li key={i}>
-                <span className="font-medium text-amber-300">{d.string} string</span> — {d.likelyCause}
+                <span className="font-semibold text-atlas-warning">{d.string} string</span> — {d.likelyCause}
               </li>
             ))}
           </ul>
         )}
 
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        {error && <p className="atlas-error mt-4">{error}</p>}
 
         {lastAnalysis != null && (
-          <p className="mt-4 text-sm text-emerald-300">
+          <p className="atlas-success-text mt-4">
             Practice saved — journal and analytics updated automatically.
           </p>
         )}
       </section>
 
       {isLoading ? (
-        <p className="text-slate-400">Loading analytics…</p>
+        <p className="atlas-subtext">Loading analytics…</p>
       ) : data ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <ChartCard title="Transitions over time">
             <LineChart data={data.transitionsOverTime}>
-              <CartesianGrid stroke="#334155" />
-              <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: '#1e293b', border: 'none' }} />
-              <Line type="monotone" dataKey="transitions" stroke="#34d399" />
+              <CartesianGrid stroke={CHART_GRID} />
+              <XAxis dataKey="date" stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <YAxis stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Line type="monotone" dataKey="transitions" stroke={CHART_BLUE} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartCard>
 
@@ -129,21 +139,21 @@ export function DashboardPage() {
                 count: c.count,
               }))}
             >
-              <CartesianGrid stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: '#1e293b', border: 'none' }} />
-              <Bar dataKey="count" fill="#34d399" />
+              <CartesianGrid stroke={CHART_GRID} />
+              <XAxis dataKey="name" stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <YAxis stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Bar dataKey="count" fill={CHART_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartCard>
 
           <ChartCard title="BPM progression" className="lg:col-span-2">
             <LineChart data={data.bpmProgression}>
-              <CartesianGrid stroke="#334155" />
-              <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: '#1e293b', border: 'none' }} />
-              <Line type="monotone" dataKey="avgBpm" stroke="#60a5fa" />
+              <CartesianGrid stroke={CHART_GRID} />
+              <XAxis dataKey="date" stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <YAxis stroke={CHART_AXIS} tick={{ fontSize: 11 }} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Line type="monotone" dataKey="avgBpm" stroke={CHART_TEAL} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartCard>
         </div>
@@ -154,9 +164,9 @@ export function DashboardPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-800/60 p-4">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="text-2xl font-semibold text-white">{value}</p>
+    <div className="rounded-lg border border-atlas-border bg-atlas-surface p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-atlas-muted">{label}</p>
+      <p className="text-2xl font-semibold text-atlas-navy">{value}</p>
     </div>
   )
 }
@@ -171,8 +181,8 @@ function ChartCard({
   className?: string
 }) {
   return (
-    <div className={`rounded-xl border border-slate-700 bg-slate-900 p-4 ${className}`}>
-      <h2 className="mb-4 text-sm font-semibold text-slate-300">{title}</h2>
+    <div className={`atlas-card p-4 ${className}`}>
+      <h2 className="mb-4 text-sm font-semibold text-atlas-text">{title}</h2>
       <ResponsiveContainer width="100%" height={220}>
         {children}
       </ResponsiveContainer>

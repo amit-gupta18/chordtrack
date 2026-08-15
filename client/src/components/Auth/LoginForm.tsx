@@ -15,18 +15,19 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-6">
-      <h1 className="text-2xl font-bold text-white">Sign in</h1>
-      {login.isError && (
-        <p className="text-sm text-red-400">{(login.error as Error).message}</p>
-      )}
+    <form onSubmit={handleSubmit} className="atlas-card mx-auto w-full max-w-md space-y-4 p-6">
+      <div className="mb-2">
+        <h1 className="atlas-heading">Sign in</h1>
+        <p className="atlas-subtext mt-1">Welcome back to Chordtrack</p>
+      </div>
+      {login.isError && <p className="atlas-error">{(login.error as Error).message}</p>}
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-white"
+        className="atlas-input"
       />
       <input
         type="password"
@@ -34,17 +35,13 @@ export function LoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-white"
+        className="atlas-input"
       />
-      <button
-        type="submit"
-        disabled={login.isPending}
-        className="w-full rounded-lg bg-emerald-600 py-2 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-      >
+      <button type="submit" disabled={login.isPending} className="atlas-btn-primary w-full">
         {login.isPending ? 'Signing in…' : 'Sign in'}
       </button>
-      <p className="text-center text-sm text-slate-400">
-        No account? <Link to="/register" className="text-emerald-400 hover:underline">Register</Link>
+      <p className="text-center text-sm text-atlas-muted">
+        No account? <Link to="/register" className="atlas-link">Register</Link>
       </p>
     </form>
   )
