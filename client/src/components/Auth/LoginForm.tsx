@@ -11,7 +11,7 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await login.mutateAsync({ email, password })
-    navigate('/trainer')
+    navigate('/dashboard')
   }
 
   return (

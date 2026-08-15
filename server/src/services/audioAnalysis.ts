@@ -2,15 +2,31 @@ import type { StringIssue, IPerStringDiagnosis } from '../models/AudioAnalysis.j
 
 export const CHORD_STRING_NOTES: Record<string, Record<string, string>> = {
   A: { E: 'A', A: 'E', D: 'A', G: 'C#', B: 'E' },
+  Am: { E: 'A', A: 'E', D: 'A', G: 'C', B: 'E' },
   D: { E: 'D', A: 'A', D: 'D', G: 'F#', B: 'D' },
+  Dm: { E: 'D', A: 'A', D: 'D', G: 'F', B: 'D' },
   E: { E: 'E', A: 'B', D: 'E', G: 'G#', B: 'E' },
+  Em: { E: 'E', A: 'B', D: 'E', G: 'G', B: 'E' },
   G: { E: 'G', A: 'B', D: 'G', G: 'B', B: 'D' },
   C: { E: 'C', A: 'E', D: 'G', G: 'C', B: 'E' },
+  F: { E: 'F', A: 'C', D: 'F', G: 'A', B: 'C' },
 }
 
 const NOTE_TO_SEMITONE: Record<string, number> = {
   C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5,
   'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
+}
+
+const CHORD_CHROMA_TEMPLATES: Record<string, number[]> = {
+  A: [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+  Am: [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+  D: [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+  Dm: [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  E: [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+  Em: [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+  G: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+  C: [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+  F: [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
 }
 
 const FAILURE_CAUSES: Record<StringIssue, string> = {
@@ -22,41 +38,62 @@ const FAILURE_CAUSES: Record<StringIssue, string> = {
 
 export interface AudioFrame {
   timestamp: number
-  frequency: number | null
   rms: number
   onsets: boolean
+  chroma?: number[]
+  detectedChord?: string | null
+  confidence?: number
 }
 
 export interface LiveAnalysisState {
-  expectedSequence: string[]
   targetBpm: number
   detectedSequence: string[]
-  frameBuffer: AudioFrame[]
   lastOnsetMs: number
   onsetTimes: number[]
-  currentChordIndex: number
+  lastDetectedChord: string | null
+  stableChordFrames: number
+  startedAtMs: number
+  lastChroma: number[]
 }
 
-export function createAnalysisState(
-  expectedSequence: string[],
-  targetBpm: number,
-): LiveAnalysisState {
+export function createAnalysisState(targetBpm = 80): LiveAnalysisState {
   return {
-    expectedSequence,
     targetBpm,
     detectedSequence: [],
-    frameBuffer: [],
     lastOnsetMs: 0,
     onsetTimes: [],
-    currentChordIndex: 0,
+    lastDetectedChord: null,
+    stableChordFrames: 0,
+    startedAtMs: Date.now(),
+    lastChroma: new Array(12).fill(0),
   }
 }
 
-function frequencyToNote(freq: number): string | null {
-  if (freq <= 0) return null
-  const semitone = Math.round(12 * Math.log2(freq / 440)) + 69
-  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-  return noteNames[((semitone % 12) + 12) % 12] ?? null
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0
+  let magA = 0
+  let magB = 0
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i]! * b[i]!
+    magA += a[i]! * a[i]!
+    magB += b[i]! * b[i]!
+  }
+  if (magA === 0 || magB === 0) return 0
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB))
+}
+
+export function identifyChordFromChroma(chroma: number[], rms: number): string | null {
+  if (rms < 0.012) return null
+  let best: string | null = null
+  let bestScore = 0
+  for (const [name, template] of Object.entries(CHORD_CHROMA_TEMPLATES)) {
+    const score = cosineSimilarity(chroma, template)
+    if (score > bestScore) {
+      bestScore = score
+      best = name
+    }
+  }
+  return bestScore >= 0.62 ? best : null
 }
 
 function notesMatch(detected: string, expected: string): boolean {
@@ -66,22 +103,37 @@ function notesMatch(detected: string, expected: string): boolean {
   return d === e
 }
 
-export function diagnoseChord(chord: string, detectedNotes: Map<string, string>): IPerStringDiagnosis[] {
+export function diagnoseChord(chord: string, chroma: number[]): IPerStringDiagnosis[] {
   const expected = CHORD_STRING_NOTES[chord]
   if (!expected) return []
 
   const diagnoses: IPerStringDiagnosis[] = []
+  const pitchClasses = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
   for (const [stringName, expectedNote] of Object.entries(expected)) {
-    const detected = detectedNotes.get(stringName)
-    if (!detected) {
+    const expectedPc = NOTE_TO_SEMITONE[expectedNote]
+    if (expectedPc === undefined) continue
+    const energy = chroma[expectedPc] ?? 0
+    if (energy < 0.15) {
       diagnoses.push({
         chord,
         string: stringName,
         issue: 'silent',
         likelyCause: FAILURE_CAUSES.silent,
       })
-    } else if (!notesMatch(detected, expectedNote)) {
+      continue
+    }
+
+    let loudestPc = 0
+    let loudestEnergy = 0
+    for (let i = 0; i < 12; i++) {
+      if (chroma[i]! > loudestEnergy) {
+        loudestEnergy = chroma[i]!
+        loudestPc = i
+      }
+    }
+    const loudestNote = pitchClasses[loudestPc]!
+    if (loudestEnergy > energy * 1.5 && !notesMatch(loudestNote, expectedNote)) {
       diagnoses.push({
         chord,
         string: stringName,
@@ -94,6 +146,8 @@ export function diagnoseChord(chord: string, detectedNotes: Map<string, string>)
   return diagnoses
 }
 
+const STABLE_FRAMES = 5
+
 export function processFrame(
   state: LiveAnalysisState,
   frame: AudioFrame,
@@ -104,39 +158,42 @@ export function processFrame(
     bpmEstimate: number | null
     driftMs: number | null
     diagnosis: IPerStringDiagnosis[]
+    chordSequence: string[]
+    confidence: number
   }
 } {
-  const next = { ...state, frameBuffer: [...state.frameBuffer, frame].slice(-50) }
+  const next: LiveAnalysisState = { ...state }
+  if (frame.chroma) next.lastChroma = frame.chroma
 
   if (frame.onsets && frame.timestamp - state.lastOnsetMs > 200) {
     next.lastOnsetMs = frame.timestamp
     next.onsetTimes = [...state.onsetTimes, frame.timestamp].slice(-32)
   }
 
-  const recentFrames = next.frameBuffer.filter((f) => f.rms > 0.02 && f.frequency)
-  const detectedNotes = new Map<string, string>()
+  const rawChord =
+    frame.detectedChord ??
+    (frame.chroma ? identifyChordFromChroma(frame.chroma, frame.rms) : null)
 
-  for (const f of recentFrames) {
-    const note = frequencyToNote(f.frequency!)
-    if (!note) continue
-    const freq = f.frequency!
-    if (freq < 120) detectedNotes.set('E', note)
-    else if (freq < 180) detectedNotes.set('A', note)
-    else if (freq < 260) detectedNotes.set('D', note)
-    else if (freq < 360) detectedNotes.set('G', note)
-    else detectedNotes.set('B', note)
+  if (rawChord === state.lastDetectedChord) {
+    next.stableChordFrames = state.stableChordFrames + 1
+  } else {
+    next.stableChordFrames = rawChord ? 1 : 0
+    next.lastDetectedChord = rawChord
   }
 
-  const expectedChord = state.expectedSequence[state.currentChordIndex] ?? null
-  let detectedChord: string | null = null
-  let diagnosis: IPerStringDiagnosis[] = []
-
-  if (expectedChord) {
-    diagnosis = diagnoseChord(expectedChord, detectedNotes)
-    if (diagnosis.length === 0 && detectedNotes.size >= 2) {
-      detectedChord = expectedChord
-    }
+  let detectedSequence = [...state.detectedSequence]
+  if (
+    rawChord &&
+    next.stableChordFrames === STABLE_FRAMES &&
+    detectedSequence[detectedSequence.length - 1] !== rawChord
+  ) {
+    detectedSequence = [...detectedSequence, rawChord]
+    next.detectedSequence = detectedSequence
   }
+
+  const detectedChord =
+    next.stableChordFrames >= 3 ? rawChord : state.lastDetectedChord
+  const diagnosis = detectedChord ? diagnoseChord(detectedChord, next.lastChroma) : []
 
   let bpmEstimate: number | null = null
   if (next.onsetTimes.length >= 2) {
@@ -151,12 +208,19 @@ export function processFrame(
   const expectedInterval = 60_000 / state.targetBpm
   const driftMs =
     bpmEstimate && state.targetBpm
-      ? Math.round((60_000 / bpmEstimate - expectedInterval))
+      ? Math.round(60_000 / bpmEstimate - expectedInterval)
       : null
 
   return {
     state: next,
-    feedback: { detectedChord, bpmEstimate, driftMs, diagnosis },
+    feedback: {
+      detectedChord,
+      bpmEstimate,
+      driftMs,
+      diagnosis,
+      chordSequence: detectedSequence,
+      confidence: frame.confidence ?? 0,
+    },
   }
 }
 
@@ -174,11 +238,10 @@ export function finalizeAnalysis(
   transitionDurationsMs: number[]
   hesitationPoints: number[]
   perStringDiagnosis: IPerStringDiagnosis[]
+  durationSeconds: number
 } {
   const detected = state.detectedSequence
-  const expected = state.expectedSequence
-  const matches = expected.filter((chord, i) => detected[i] === chord).length
-  const accuracy = expected.length ? matches / expected.length : 0
+  const durationSeconds = Math.max(1, Math.round((Date.now() - state.startedAtMs) / 1000))
 
   const transitionDurationsMs: number[] = []
   const hesitationPoints: number[] = []
@@ -187,9 +250,7 @@ export function finalizeAnalysis(
   for (let i = 1; i < state.onsetTimes.length; i++) {
     const gap = state.onsetTimes[i]! - state.onsetTimes[i - 1]!
     transitionDurationsMs.push(gap)
-    if (gap > hesitationThreshold) {
-      hesitationPoints.push(state.onsetTimes[i]!)
-    }
+    if (gap > hesitationThreshold) hesitationPoints.push(state.onsetTimes[i]!)
   }
 
   let actualBpm: number | null = null
@@ -199,31 +260,23 @@ export function finalizeAnalysis(
   }
 
   const timingDrift = actualBpm
-    ? [Math.round((60_000 / actualBpm - 60_000 / state.targetBpm))]
+    ? [Math.round(60_000 / actualBpm - 60_000 / state.targetBpm)]
     : []
+
+  const lastChord = detected[detected.length - 1]
+  const perStringDiagnosis = lastChord ? diagnoseChord(lastChord, state.lastChroma) : []
 
   return {
     sessionId,
-    expectedSequence: expected,
+    expectedSequence: [],
     detectedSequence: detected,
-    accuracy,
+    accuracy: detected.length >= 2 ? 1 : detected.length > 0 ? 0.5 : 0,
     actualBpm,
     targetBpm: state.targetBpm,
     timingDrift,
     transitionDurationsMs,
     hesitationPoints,
-    perStringDiagnosis: [],
-  }
-}
-
-export function compareStrumming(
-  expected: string[],
-  detected: string[],
-): { expected: string[]; detected: string[]; matchRate: number } {
-  const matches = expected.filter((s, i) => detected[i] === s).length
-  return {
-    expected,
-    detected,
-    matchRate: expected.length ? matches / expected.length : 0,
+    perStringDiagnosis,
+    durationSeconds,
   }
 }

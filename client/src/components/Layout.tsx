@@ -3,11 +3,9 @@ import { useLogout } from '../queries/useAuth'
 import { useAuthStore } from '../stores/useAuthStore'
 
 const links = [
-  { to: '/trainer', label: 'Trainer' },
-  { to: '/metronome', label: 'Metronome' },
-  { to: '/audio', label: 'Audio' },
-  { to: '/journal', label: 'Journal' },
   { to: '/dashboard', label: 'Dashboard' },
+  { to: '/metronome', label: 'Metronome' },
+  { to: '/journal', label: 'Journal' },
   { to: '/insights', label: 'Insights' },
 ]
 
@@ -19,7 +17,9 @@ export function Layout() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <nav className="border-b border-slate-800 bg-slate-900/80">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-          <span className="font-bold text-emerald-400">Chordtrack</span>
+          <NavLink to="/dashboard" className="font-bold text-emerald-400">
+            Chordtrack
+          </NavLink>
           <div className="flex flex-wrap gap-2">
             {links.map((link) => (
               <NavLink

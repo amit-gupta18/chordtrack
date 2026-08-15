@@ -12,7 +12,7 @@ export function RegisterForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await register.mutateAsync({ name, email, password })
-    navigate('/trainer')
+    navigate('/dashboard')
   }
 
   return (
