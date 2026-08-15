@@ -3,13 +3,13 @@ import {
   SESSION_DURATION_MS,
   type ChordId,
   type ChordTemplates,
-  type SessionPhase,
   type SessionStats,
 } from '../types/hand'
+import type { CreateSessionPayload, SelfReport } from '../api/sessions'
 import { averageSwitchTimeMs } from './switchDetector'
 
 export interface SessionState {
-  phase: SessionPhase
+  phase: import('../types/hand').SessionPhase
   templates: ChordTemplates
   calibrationTarget: ChordId | null
   calibrationBuffer: number[][]
@@ -40,10 +40,7 @@ export function isCalibrated(templates: ChordTemplates): boolean {
   return Boolean(templates.A && templates.D)
 }
 
-export function startCalibration(
-  state: SessionState,
-  chord: ChordId,
-): SessionState {
+export function startCalibration(state: SessionState, chord: ChordId): SessionState {
   return {
     ...state,
     phase: 'calibrating',
@@ -52,38 +49,21 @@ export function startCalibration(
   }
 }
 
-export function addCalibrationFrame(
-  state: SessionState,
-  features: number[],
-): SessionState {
-  if (state.phase !== 'calibrating' || !state.calibrationTarget) {
-    return state
-  }
-
-  return {
-    ...state,
-    calibrationBuffer: [...state.calibrationBuffer, features],
-  }
+export function addCalibrationFrame(state: SessionState, features: number[]): SessionState {
+  if (state.phase !== 'calibrating' || !state.calibrationTarget) return state
+  return { ...state, calibrationBuffer: [...state.calibrationBuffer, features] }
 }
 
 export function finalizeCalibration(state: SessionState): SessionState {
-  if (!state.calibrationTarget || state.calibrationBuffer.length === 0) {
-    return state
-  }
+  if (!state.calibrationTarget || state.calibrationBuffer.length === 0) return state
 
   const length = state.calibrationBuffer[0].length
   const sum = new Array<number>(length).fill(0)
   for (const vector of state.calibrationBuffer) {
-    for (let i = 0; i < length; i++) {
-      sum[i] += vector[i]
-    }
+    for (let i = 0; i < length; i++) sum[i] += vector[i]
   }
   const averaged = sum.map((v) => v / state.calibrationBuffer.length)
-
-  const templates: ChordTemplates = {
-    ...state.templates,
-    [state.calibrationTarget]: averaged,
-  }
+  const templates: ChordTemplates = { ...state.templates, [state.calibrationTarget]: averaged }
 
   return {
     ...state,
@@ -96,7 +76,6 @@ export function finalizeCalibration(state: SessionState): SessionState {
 
 export function beginCountdown(state: SessionState): SessionState {
   if (!isCalibrated(state.templates)) return state
-
   return {
     ...state,
     phase: 'countdown',
@@ -109,9 +88,8 @@ export function beginCountdown(state: SessionState): SessionState {
   }
 }
 
-export function tickCountdown(state: SessionState): SessionState {
+export function tickCountdown(state: SessionState, durationMs = SESSION_DURATION_MS): SessionState {
   if (state.phase !== 'countdown') return state
-
   const next = state.countdownValue - 1
   if (next <= 0) {
     const now = performance.now()
@@ -120,14 +98,10 @@ export function tickCountdown(state: SessionState): SessionState {
       phase: 'running',
       countdownValue: 0,
       sessionStartMs: now,
-      sessionEndMs: now + SESSION_DURATION_MS,
+      sessionEndMs: now + durationMs,
     }
   }
-
-  return {
-    ...state,
-    countdownValue: next,
-  }
+  return { ...state, countdownValue: next }
 }
 
 export function updateRunningSession(
@@ -136,38 +110,21 @@ export function updateRunningSession(
   switchTimestamps: number[],
   stableChord: import('../types/hand').DetectedChord,
 ): SessionState {
-  if (state.phase !== 'running' || state.sessionEndMs === null) {
-    return state
-  }
-
+  if (state.phase !== 'running' || state.sessionEndMs === null) return state
   const now = performance.now()
   if (now >= state.sessionEndMs) {
-    return {
-      ...state,
-      phase: 'finished',
-      switchCount,
-      switchTimestamps,
-      stableChord,
-    }
+    return { ...state, phase: 'finished', switchCount, switchTimestamps, stableChord }
   }
-
-  return {
-    ...state,
-    switchCount,
-    switchTimestamps,
-    stableChord,
-  }
+  return { ...state, switchCount, switchTimestamps, stableChord }
 }
 
 export function resetSession(state: SessionState, clearTemplates = false): SessionState {
-  return {
-    ...createSessionState(),
-    templates: clearTemplates ? {} : state.templates,
-  }
+  return { ...createSessionState(), templates: clearTemplates ? {} : state.templates }
 }
 
 export function buildSessionStats(
   state: SessionState,
+  durationMs = SESSION_DURATION_MS,
   now = performance.now(),
 ): SessionStats {
   const elapsedMs =
@@ -175,16 +132,15 @@ export function buildSessionStats(
       ? 0
       : Math.min(
           state.phase === 'finished' && state.sessionEndMs
-            ? SESSION_DURATION_MS
+            ? durationMs
             : now - state.sessionStartMs,
-          SESSION_DURATION_MS,
+          durationMs,
         )
 
-  const remainingMs = Math.max(0, SESSION_DURATION_MS - elapsedMs)
+  const remainingMs = Math.max(0, durationMs - elapsedMs)
   const elapsedMinutes = elapsedMs / 60_000
   const avgSwitchTimeMs = averageSwitchTimeMs(state.switchTimestamps)
-  const switchesPerMinute =
-    elapsedMinutes > 0 ? state.switchCount / elapsedMinutes : 0
+  const switchesPerMinute = elapsedMinutes > 0 ? state.switchCount / elapsedMinutes : 0
 
   return {
     switchCount: state.switchCount,
@@ -194,5 +150,21 @@ export function buildSessionStats(
     remainingMs,
     avgSwitchTimeMs,
     switchesPerMinute,
+  }
+}
+
+export function toSessionPayload(
+  state: SessionState,
+  bpm: number,
+  durationMs: number,
+  selfReport?: SelfReport,
+): CreateSessionPayload {
+  return {
+    type: 'chordTransition',
+    chordPair: { from: 'A', to: 'D' },
+    bpm,
+    durationSeconds: Math.round(durationMs / 1000),
+    transitionsCompleted: state.switchCount,
+    selfReport,
   }
 }
