@@ -19,24 +19,12 @@ export function verifyToken(token: string): AuthPayload {
   return jwt.verify(token, env.jwtSecret) as AuthPayload
 }
 
-function getTokenFromRequest(req: Request): string | undefined {
-  const cookieToken = req.cookies?.token as string | undefined
-  if (cookieToken) return cookieToken
-
-  const authHeader = req.headers.authorization
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.slice(7)
-  }
-
-  return undefined
-}
-
 export function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void {
-  const token = getTokenFromRequest(req)
+  const token = req.cookies?.token as string | undefined
   if (!token) {
     res.status(401).json({ error: 'Authentication required' })
     return
@@ -55,17 +43,12 @@ export function setAuthCookie(res: Response, token: string): void {
   res.cookie('token', token, {
     httpOnly: true,
     secure: env.cookieSecure,
-    sameSite: env.cookieSameSite,
+    sameSite: 'lax',
     maxAge: env.cookieMaxAgeMs,
     path: '/',
   })
 }
 
 export function clearAuthCookie(res: Response): void {
-  res.clearCookie('token', {
-    path: '/',
-    httpOnly: true,
-    secure: env.cookieSecure,
-    sameSite: env.cookieSameSite,
-  })
+  res.clearCookie('token', { path: '/' })
 }

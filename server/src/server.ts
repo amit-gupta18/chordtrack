@@ -29,8 +29,7 @@ const io = new SocketServer(httpServer, {
 io.use((socket, next) => {
   const cookieHeader = socket.handshake.headers.cookie ?? ''
   const tokenMatch = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/)
-  const token =
-    tokenMatch?.[1] ?? (socket.handshake.auth?.token as string | undefined)
+  const token = tokenMatch?.[1]
   if (!token) {
     next(new Error('Authentication required'))
     return
