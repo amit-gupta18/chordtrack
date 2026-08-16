@@ -146,7 +146,7 @@ export function diagnoseChord(chord: string, chroma: number[]): IPerStringDiagno
   return diagnoses
 }
 
-const STABLE_FRAMES = 5
+const STABLE_FRAMES = 3
 
 export function processFrame(
   state: LiveAnalysisState,

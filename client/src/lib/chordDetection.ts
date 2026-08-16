@@ -16,10 +16,12 @@ export const CHORD_TEMPLATES: ChordTemplate[] = [
   { name: 'F', chromagram: [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0] },
 ]
 
-const MATCH_THRESHOLD = 0.58
+const MATCH_THRESHOLD = 0.52
 const SILENCE_RMS = 0.01
-const STABLE_FRAMES_TO_COMMIT = 5
-const STABLE_FRAMES_TO_DISPLAY = 2
+const STABLE_FRAMES_TO_COMMIT = 3
+const STABLE_FRAMES_ON_ONSET = 2
+const STABLE_FRAMES_TO_DISPLAY = 1
+const MIN_SWITCH_GAP_MS = 160
 
 function weightedCosineSimilarity(a: number[], template: ChordTemplate): number {
   let dot = 0
@@ -41,7 +43,7 @@ export class ChromagramSmoother {
   private history: number[][] = []
   private windowSize: number
 
-  constructor(windowSize = 10) {
+  constructor(windowSize = 4) {
     this.windowSize = windowSize
   }
 
@@ -86,7 +88,7 @@ export function detectChordFromChroma(
   }
 
   // Require clear winner over runner-up
-  if (bestScore < MATCH_THRESHOLD || bestScore - secondScore < 0.06) {
+  if (bestScore < MATCH_THRESHOLD || bestScore - secondScore < 0.04) {
     return { chord: null, confidence: bestScore }
   }
 
@@ -118,13 +120,16 @@ export class ChordSessionTracker {
   private lastCommitted: string | null = null
   private candidate: string | null = null
   private candidateFrames = 0
+  private lastCommitAtMs = -Infinity
   private readonly startedAt: number
 
   constructor(startedAt = performance.now()) {
     this.startedAt = startedAt
   }
 
-  update(rawChord: string | null): string | null {
+  update(rawChord: string | null, onset = false): string | null {
+    const nowMs = Math.round(performance.now() - this.startedAt)
+
     if (!rawChord) {
       this.candidate = null
       this.candidateFrames = 0
@@ -138,14 +143,19 @@ export class ChordSessionTracker {
       this.candidateFrames = 1
     }
 
-    if (this.candidateFrames >= STABLE_FRAMES_TO_COMMIT && rawChord !== this.lastCommitted) {
+    const framesNeeded = onset ? STABLE_FRAMES_ON_ONSET : STABLE_FRAMES_TO_COMMIT
+    const gapOk = nowMs - this.lastCommitAtMs >= MIN_SWITCH_GAP_MS
+
+    if (
+      this.candidateFrames >= framesNeeded &&
+      rawChord !== this.lastCommitted &&
+      gapOk
+    ) {
       if (this.lastCommitted !== null) this.switchCount++
       this.lastCommitted = rawChord
+      this.lastCommitAtMs = nowMs
       this.sequence.push(rawChord)
-      this.progression.push({
-        chord: rawChord,
-        atMs: Math.round(performance.now() - this.startedAt),
-      })
+      this.progression.push({ chord: rawChord, atMs: nowMs })
       this.chordPlays++
     }
 

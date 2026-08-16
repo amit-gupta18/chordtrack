@@ -92,7 +92,7 @@ export function DashboardPage() {
                 <p className="mt-2 text-sm text-atlas-muted">
                   {currentChord
                     ? `${Math.round((feedback?.confidence ?? 0) * 100)}% match`
-                    : 'Play a chord — hold it steady for a moment'}
+                    : 'Strum a chord'}
                 </p>
               )}
             </div>
@@ -173,16 +173,6 @@ export function DashboardPage() {
           </div>
         )}
 
-        {feedback?.diagnosis && feedback.diagnosis.length > 0 && (
-          <ul className="mt-4 space-y-2 rounded-lg border border-atlas-warning/30 bg-[#FFFAE6] p-4 text-sm text-atlas-text">
-            {feedback.diagnosis.map((d, i) => (
-              <li key={i}>
-                <span className="font-semibold text-atlas-warning">{d.string} string</span> — {d.likelyCause}
-              </li>
-            ))}
-          </ul>
-        )}
-
         {error && <p className="atlas-error mt-4">{error}</p>}
 
         {lastResult && (
@@ -258,9 +248,6 @@ export function DashboardPage() {
                     </div>
                   ) : null}
                 </div>
-                {session.analysis?.aiFeedback && (
-                  <p className="mt-2 line-clamp-2 text-sm text-atlas-text">{session.analysis.aiFeedback}</p>
-                )}
               </li>
             ))}
           </ul>

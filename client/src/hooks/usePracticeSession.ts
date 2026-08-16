@@ -12,7 +12,7 @@ import {
 } from '../lib/chordDetection'
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:3001'
-const FFT_SIZE = 8192
+const FFT_SIZE = 4096
 
 export interface PracticeFeedback {
   detectedChord: string | null
@@ -152,7 +152,7 @@ export function usePracticeSession() {
         const source = ctx.createMediaStreamSource(stream)
         const analyser = ctx.createAnalyser()
         analyser.fftSize = FFT_SIZE
-        analyser.smoothingTimeConstant = 0.2
+        analyser.smoothingTimeConstant = 0.05
         analyser.minDecibels = -90
         analyser.maxDecibels = -10
         source.connect(analyser)
@@ -179,7 +179,6 @@ export function usePracticeSession() {
                   ...prev,
                   bpmEstimate: data.bpmEstimate ?? prev.bpmEstimate,
                   driftMs: data.driftMs ?? prev.driftMs,
-                  diagnosis: data.diagnosis ?? prev.diagnosis,
                 }
               : prev,
           )
@@ -204,13 +203,15 @@ export function usePracticeSession() {
           analyser.getFloatFrequencyData(freqBuffer)
 
           const rms = computeRms(timeBuffer)
+          const onsets = rms > 0.03 && lastRmsRef.current <= 0.03
+          lastRmsRef.current = rms
+
           const chroma = computeChromaFromFft(freqBuffer, ctx.sampleRate)
+          if (onsets) smootherRef.current.reset()
           const smoothed = smootherRef.current.push(chroma)
           const { chord: rawChord, confidence } = detectChordFromChroma(smoothed, rms)
-          const displayChord = tracker.update(rawChord)
 
-          const onsets = rms > 0.035 && lastRmsRef.current <= 0.035
-          lastRmsRef.current = rms
+          const displayChord = tracker.update(rawChord, onsets)
 
           const elapsed = performance.now() - sessionStartRef.current
           const remaining = Math.max(0, durationMsRef.current - elapsed)
