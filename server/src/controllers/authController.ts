@@ -1,13 +1,7 @@
 import bcrypt from 'bcryptjs'
 import type { Response } from 'express'
 import { z } from 'zod'
-import {
-  authMiddleware,
-  clearAuthCookie,
-  setAuthCookie,
-  signToken,
-  type AuthRequest,
-} from '../middleware/auth.js'
+import { authMiddleware, signToken, type AuthRequest } from '../middleware/auth.js'
 import { validateBody } from '../middleware/validate.js'
 import { User } from '../models/User.js'
 
@@ -35,7 +29,6 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
   const user = await User.create({ name, email, passwordHash })
 
   const token = signToken({ userId: user._id.toString(), email: user.email })
-  setAuthCookie(res, token)
 
   res.status(201).json({
     user: { id: user._id, name: user.name, email: user.email },
@@ -59,7 +52,6 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
   }
 
   const token = signToken({ userId: user._id.toString(), email: user.email })
-  setAuthCookie(res, token)
 
   res.json({
     user: { id: user._id, name: user.name, email: user.email },
@@ -68,7 +60,6 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
 }
 
 export function logout(_req: AuthRequest, res: Response): void {
-  clearAuthCookie(res)
   res.json({ ok: true })
 }
 

@@ -12,11 +12,7 @@ export const env = {
   mongodbUri: required('MONGODB_URI'),
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
-  cookieSecure:
-    process.env.COOKIE_SECURE === 'true' ||
-    process.env.NODE_ENV === 'production',
   openaiApiKey: process.env.OPENAI_API_KEY ?? '',
   openaiModel: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
   openaiInsightsModel: process.env.OPENAI_INSIGHTS_MODEL ?? 'gpt-4o',
-  cookieMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
 }

@@ -1,4 +1,3 @@
-import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import analyticsRoutes from './routes/analytics.js'
@@ -10,14 +9,8 @@ import sessionsRoutes from './routes/sessions.js'
 export function createApp() {
   const app = express()
 
-  app.use(
-    cors({
-      origin: true,
-      credentials: true,
-    }),
-  )
+  app.use(cors({ origin: '*' }))
   app.use(express.json())
-  app.use(cookieParser())
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true })

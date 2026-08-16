@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/auth'
-import { clearTokenCookie, setTokenCookie } from '../lib/authCookie'
+import { clearToken, setToken } from '../lib/token'
 import { useAuthStore } from '../stores/useAuthStore'
 
 export function useMe() {
@@ -22,7 +22,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      setTokenCookie(data.token)
+      setToken(data.token)
       setUser(data.user)
       queryClient.setQueryData(['auth', 'me'], data.user)
     },
@@ -35,7 +35,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
-      setTokenCookie(data.token)
+      setToken(data.token)
       setUser(data.user)
       queryClient.setQueryData(['auth', 'me'], data.user)
     },
@@ -48,7 +48,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
-      clearTokenCookie()
+      clearToken()
       setUser(null)
       queryClient.clear()
     },

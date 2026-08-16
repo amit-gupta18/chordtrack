@@ -24,7 +24,8 @@ export function authMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  const token = req.cookies?.token as string | undefined
+  const auth = req.headers.authorization
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
   if (!token) {
     res.status(401).json({ error: 'Authentication required' })
     return
@@ -37,18 +38,4 @@ export function authMiddleware(
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
   }
-}
-
-export function setAuthCookie(res: Response, token: string): void {
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: env.cookieSecure,
-    sameSite: 'lax',
-    maxAge: env.cookieMaxAgeMs,
-    path: '/',
-  })
-}
-
-export function clearAuthCookie(res: Response): void {
-  res.clearCookie('token', { path: '/' })
 }

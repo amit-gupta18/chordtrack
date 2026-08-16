@@ -26,7 +26,7 @@ Monorepo for the Guitar Practice AI app.
 Client: http://localhost:5173  
 Server: http://localhost:3001
 
-API calls go directly to the server. Login sets an httpOnly `token` cookie; subsequent requests send it via `credentials: 'include'`.
+API calls go directly to the server with `Access-Control-Allow-Origin: *`. Login returns a JWT; the client stores it and sends `Authorization: Bearer <token>` on every request.
 
 ## Env vars
 
@@ -34,7 +34,7 @@ API calls go directly to the server. Login sets an httpOnly `token` cookie; subs
 - `MONGODB_URI` — required
 - `JWT_SECRET` — required
 - `OPENAI_API_KEY` — optional (AI coaching)
-- `PORT`, `JWT_EXPIRES_IN`, `COOKIE_SECURE`, `OPENAI_MODEL`, `OPENAI_INSIGHTS_MODEL`
+- `PORT`, `JWT_EXPIRES_IN`, `OPENAI_MODEL`, `OPENAI_INSIGHTS_MODEL`
 
 ### Client (`client/.env`)
 - `VITE_API_URL` — default `http://localhost:3001/api`
