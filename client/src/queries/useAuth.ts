@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/auth'
+import { clearTokenCookie, setTokenCookie } from '../lib/authCookie'
 import { useAuthStore } from '../stores/useAuthStore'
 
 export function useMe() {
@@ -17,20 +18,26 @@ export function useMe() {
 
 export function useLogin() {
   const queryClient = useQueryClient()
+  const setUser = useAuthStore((s) => s.setUser)
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ['auth', 'me'] })
+    onSuccess: (data) => {
+      setTokenCookie(data.token)
+      setUser(data.user)
+      queryClient.setQueryData(['auth', 'me'], data.user)
     },
   })
 }
 
 export function useRegister() {
   const queryClient = useQueryClient()
+  const setUser = useAuthStore((s) => s.setUser)
   return useMutation({
     mutationFn: authApi.register,
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ['auth', 'me'] })
+    onSuccess: (data) => {
+      setTokenCookie(data.token)
+      setUser(data.user)
+      queryClient.setQueryData(['auth', 'me'], data.user)
     },
   })
 }
@@ -41,6 +48,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
+      clearTokenCookie()
       setUser(null)
       queryClient.clear()
     },
