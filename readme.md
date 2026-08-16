@@ -26,7 +26,7 @@ Monorepo for the Guitar Practice AI app.
 Client: http://localhost:5173  
 Server: http://localhost:3001
 
-API calls go directly to the server via CORS (`credentials: 'include'`).
+API calls are proxied through the Vite dev server (`/api` → server) so auth cookies stay same-origin. The login response also returns a JWT that the client sends as `Authorization: Bearer` on subsequent requests.
 
 ## Env vars
 
@@ -37,5 +37,5 @@ API calls go directly to the server via CORS (`credentials: 'include'`).
 - `PORT`, `JWT_EXPIRES_IN`, `COOKIE_SECURE`, `OPENAI_MODEL`, `OPENAI_INSIGHTS_MODEL`
 
 ### Client (`client/.env`)
-- `VITE_API_URL` — default `http://localhost:3001/api`
-- `VITE_WS_URL` — default `http://localhost:3001`
+- `VITE_API_URL` — default `/api` (proxied to server in dev)
+- `VITE_WS_URL` — optional; defaults to same origin (proxied `/socket.io`)

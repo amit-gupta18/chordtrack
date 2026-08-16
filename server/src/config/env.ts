@@ -15,6 +15,11 @@ export const env = {
   cookieSecure:
     process.env.COOKIE_SECURE === 'true' ||
     process.env.NODE_ENV === 'production',
+  cookieSameSite:
+    (process.env.COOKIE_SAME_SITE as 'lax' | 'none' | 'strict' | undefined) ??
+    (process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production'
+      ? 'none'
+      : 'lax'),
   openaiApiKey: process.env.OPENAI_API_KEY ?? '',
   openaiModel: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
   openaiInsightsModel: process.env.OPENAI_INSIGHTS_MODEL ?? 'gpt-4o',

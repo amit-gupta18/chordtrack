@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { io, type Socket } from 'socket.io-client'
+import { getAuthToken } from '../lib/authToken'
 import { computeChromaFromFft } from '../lib/chroma'
 import {
   ChordSessionTracker,
@@ -10,7 +11,7 @@ import {
   detectChordFromChroma,
 } from '../lib/chordDetection'
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:3001'
+const WS_URL = import.meta.env.VITE_WS_URL || undefined
 const FFT_SIZE = 8192
 
 export interface PracticeFeedback {
@@ -160,7 +161,11 @@ export function usePracticeSession() {
         const timeBuffer = new Float32Array(analyser.fftSize)
         const freqBuffer = new Float32Array(analyser.frequencyBinCount)
 
-        const socket = io(WS_URL, { withCredentials: true })
+        const token = getAuthToken()
+        const socket = io(WS_URL, {
+          withCredentials: true,
+          auth: token ? { token } : undefined,
+        })
         socketRef.current = socket
 
         await new Promise<void>((resolve, reject) => {

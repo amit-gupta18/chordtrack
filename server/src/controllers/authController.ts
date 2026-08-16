@@ -39,6 +39,7 @@ export async function register(req: AuthRequest, res: Response): Promise<void> {
 
   res.status(201).json({
     user: { id: user._id, name: user.name, email: user.email },
+    token,
   })
 }
 
@@ -62,6 +63,7 @@ export async function login(req: AuthRequest, res: Response): Promise<void> {
 
   res.json({
     user: { id: user._id, name: user.name, email: user.email },
+    token,
   })
 }
 

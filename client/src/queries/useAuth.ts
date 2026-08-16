@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/auth'
+import { setAuthToken } from '../lib/authToken'
 import { useAuthStore } from '../stores/useAuthStore'
 
 export function useMe() {
@@ -21,6 +22,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
+      setAuthToken(data.token)
       setUser(data.user)
       queryClient.setQueryData(['auth', 'me'], data.user)
     },
@@ -33,6 +35,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
+      setAuthToken(data.token)
       setUser(data.user)
       queryClient.setQueryData(['auth', 'me'], data.user)
     },
@@ -45,6 +48,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
+      setAuthToken(null)
       setUser(null)
       queryClient.clear()
     },

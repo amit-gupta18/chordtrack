@@ -7,15 +7,20 @@ export interface User {
   createdAt?: string
 }
 
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
 export function register(data: { name: string; email: string; password: string }) {
-  return apiFetch<{ user: User }>('/auth/register', {
+  return apiFetch<AuthResponse>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 }
 
 export function login(data: { email: string; password: string }) {
-  return apiFetch<{ user: User }>('/auth/login', {
+  return apiFetch<AuthResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(data),
   })
